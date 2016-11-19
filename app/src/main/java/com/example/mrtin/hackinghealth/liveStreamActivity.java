@@ -29,6 +29,8 @@ import com.microsoft.band.sensors.BandPedometerEvent;
 import com.microsoft.band.sensors.BandPedometerEventListener;
 import com.microsoft.band.sensors.HeartRateConsentListener;
 
+import org.w3c.dom.Text;
+
 import java.lang.ref.WeakReference;
 import java.util.Calendar;
 import java.util.Date;
@@ -40,9 +42,10 @@ public class liveStreamActivity extends MainActivity implements SensorEventListe
     private BandClient client= null;
     private ImageButton startButton;
     long steps;
-    private TextView txtStatus, txtStatus2;
+    private TextView txtStatus, txtStatus2, txtStatus3, txtStatus4;
     private SensorManager senSensorManager;
     private Sensor senAccelerometer;
+    private Sensor senGyroscope;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         final WeakReference<Activity> reference= new WeakReference<Activity>(this);
@@ -53,17 +56,25 @@ public class liveStreamActivity extends MainActivity implements SensorEventListe
         mDrawer.addView(contentView, 0);
 
         getSupportActionBar().setTitle("Live Stream");
-        //startButton= (ImageButton) findViewById(R.id.btnStart);
+        startButton= (ImageButton) findViewById(R.id.btnStart);
         txtStatus= (TextView) findViewById(R.id.txtStat);
         txtStatus2= (TextView) findViewById(R.id.txtStat2);
+        txtStatus3= (TextView) findViewById(R.id.txtStat3);
+        txtStatus4= (TextView) findViewById(R.id.txtStat4);
         senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         senSensorManager.registerListener(this, senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
-
-        new HeartRateConsentTask().execute(reference);
-        Calendar rightNow= Calendar.getInstance();
-        new HeartRateSubscriptionTask().execute();
-        new BandGSRSubscriptionTask().execute();
+        senGyroscope= senSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        senSensorManager.registerListener(this, senGyroscope, SensorManager.SENSOR_DELAY_NORMAL);
+        startButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new HeartRateConsentTask().execute(reference);
+                Calendar rightNow= Calendar.getInstance();
+                new HeartRateSubscriptionTask().execute();
+                new BandGSRSubscriptionTask().execute();
+            }
+        });
     }
     private boolean getConnectedBandClient() throws InterruptedException, BandException {
         if (client == null) {
@@ -83,17 +94,18 @@ public class liveStreamActivity extends MainActivity implements SensorEventListe
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
-        Sensor mySensor = sensorEvent.sensor;
 
-        if (mySensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+        if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             float x = sensorEvent.values[0];
             float y = sensorEvent.values[1];
             float z = sensorEvent.values[2];
+            runOnNick("X:"+ x + "Y:" + y + "Z:" + z);
         }
-        if(mySensor.getType() == Sensor.TYPE_GYROSCOPE){
+        if(sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE){
             float x= sensorEvent.values[0];
             float y= sensorEvent.values[1];
             float z= sensorEvent.values[2];
+            runOnBrandon("X:"+ x + "Y:" + y + "Z:" + z);
         }
     }
 
@@ -258,6 +270,22 @@ public class liveStreamActivity extends MainActivity implements SensorEventListe
             @Override
             public void run() {
                 txtStatus.setText(string);
+            }
+        });
+    }
+    private void runOnNick(final String string){
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                txtStatus3.setText(string);
+            }
+        });
+    }
+    private void runOnBrandon(final String string){
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                txtStatus4.setText(string);
             }
         });
     }
