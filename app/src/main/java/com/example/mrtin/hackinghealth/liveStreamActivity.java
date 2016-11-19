@@ -2,6 +2,10 @@ package com.example.mrtin.hackinghealth;
 
 import android.app.Activity;
 import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -32,11 +36,13 @@ import java.util.Date;
 /**
  * Created by mrtin on 2016-11-19.
  */
-public class liveStreamActivity extends MainActivity{
+public class liveStreamActivity extends MainActivity implements SensorEventListener{
     private BandClient client= null;
     private ImageButton startButton;
     long steps;
     private TextView txtStatus, txtStatus2;
+    private SensorManager senSensorManager;
+    private Sensor senAccelerometer;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         final WeakReference<Activity> reference= new WeakReference<Activity>(this);
@@ -47,19 +53,17 @@ public class liveStreamActivity extends MainActivity{
         mDrawer.addView(contentView, 0);
 
         getSupportActionBar().setTitle("Live Stream");
-        startButton= (ImageButton) findViewById(R.id.btnStart);
+        //startButton= (ImageButton) findViewById(R.id.btnStart);
         txtStatus= (TextView) findViewById(R.id.txtStat);
         txtStatus2= (TextView) findViewById(R.id.txtStat2);
+        senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        senSensorManager.registerListener(this, senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
 
-        startButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                new HeartRateConsentTask().execute(reference);
-                Calendar rightNow= Calendar.getInstance();
-                new HeartRateSubscriptionTask().execute();
-                new BandGSRSubscriptionTask().execute();
-            }
-        });
+        new HeartRateConsentTask().execute(reference);
+        Calendar rightNow= Calendar.getInstance();
+        new HeartRateSubscriptionTask().execute();
+        new BandGSRSubscriptionTask().execute();
     }
     private boolean getConnectedBandClient() throws InterruptedException, BandException {
         if (client == null) {
@@ -76,6 +80,28 @@ public class liveStreamActivity extends MainActivity{
 
         return ConnectionState.CONNECTED == client.connect().await();
     }
+
+    @Override
+    public void onSensorChanged(SensorEvent sensorEvent) {
+        Sensor mySensor = sensorEvent.sensor;
+
+        if (mySensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            float x = sensorEvent.values[0];
+            float y = sensorEvent.values[1];
+            float z = sensorEvent.values[2];
+        }
+        if(mySensor.getType() == Sensor.TYPE_GYROSCOPE){
+            float x= sensorEvent.values[0];
+            float y= sensorEvent.values[1];
+            float z= sensorEvent.values[2];
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
+
     private class BandPedometerSubscriptionTask extends AsyncTask<Void, Void, Void> {
         @Override
         protected Void doInBackground(Void... params) {
@@ -254,5 +280,6 @@ public class liveStreamActivity extends MainActivity{
     protected void onResume() {
         super.onResume();
         navigationView.getMenu().getItem(0).setChecked(true);
+        senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
     }
 }
