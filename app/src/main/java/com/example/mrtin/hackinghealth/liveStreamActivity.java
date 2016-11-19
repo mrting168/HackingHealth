@@ -6,6 +6,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -33,6 +34,7 @@ import java.util.Date;
  */
 public class liveStreamActivity extends MainActivity{
     private BandClient client= null;
+    private ImageButton startButton;
     long steps;
     private TextView txtStatus, txtStatus2;
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,15 +47,19 @@ public class liveStreamActivity extends MainActivity{
         mDrawer.addView(contentView, 0);
 
         getSupportActionBar().setTitle("Live Stream");
-
+        startButton= (ImageButton) findViewById(R.id.btnStart);
         txtStatus= (TextView) findViewById(R.id.txtStat);
         txtStatus2= (TextView) findViewById(R.id.txtStat2);
 
-
-        new HeartRateConsentTask().execute(reference);
-        Calendar rightNow= Calendar.getInstance();
-        new HeartRateSubscriptionTask().execute();
-        new BandGSRSubscriptionTask().execute();
+        startButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new HeartRateConsentTask().execute(reference);
+                Calendar rightNow= Calendar.getInstance();
+                new HeartRateSubscriptionTask().execute();
+                new BandGSRSubscriptionTask().execute();
+            }
+        });
     }
     private boolean getConnectedBandClient() throws InterruptedException, BandException {
         if (client == null) {

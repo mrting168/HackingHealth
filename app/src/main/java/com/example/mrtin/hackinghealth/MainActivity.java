@@ -87,11 +87,11 @@ public class MainActivity extends AppCompatActivity
         switch(id){
             default:
                 navigationIntent= new Intent(this,liveStreamActivity.class);
-                break;
 
         }
 
-
+        navigationIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(navigationIntent);
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
