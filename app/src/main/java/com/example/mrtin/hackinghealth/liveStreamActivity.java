@@ -28,6 +28,7 @@ import com.microsoft.band.sensors.BandHeartRateEventListener;
 import com.microsoft.band.sensors.BandPedometerEvent;
 import com.microsoft.band.sensors.BandPedometerEventListener;
 import com.microsoft.band.sensors.HeartRateConsentListener;
+import com.microsoft.band.sensors.HeartRateQuality;
 
 import org.w3c.dom.Text;
 
@@ -35,17 +36,26 @@ import java.lang.ref.WeakReference;
 import java.util.Calendar;
 import java.util.Date;
 
+import static java.lang.Math.abs;
+
 /**
  * Created by mrtin on 2016-11-19.
  */
 public class liveStreamActivity extends MainActivity implements SensorEventListener{
     private BandClient client= null;
+    double rightNow, previous= System.currentTimeMillis();
     private ImageButton startButton;
     long steps;
-    private TextView txtStatus, txtStatus2, txtStatus3, txtStatus4;
+    private TextView txtStatus, txtStatus2, txtStatus3, txtStatus4, txtStatus5, txtStatus6, txtStatus7, txtStatus8;
     private SensorManager senSensorManager;
     private Sensor senAccelerometer;
-    private Sensor senGyroscope;
+    private Sensor senGyroscope, senSteps;
+    int stepping=0;
+    double averageCadence=0, sumCadence=0;
+    int average=1;
+    int heartRate;
+    int normHR=80;
+    HeartRateQuality quality;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         final WeakReference<Activity> reference= new WeakReference<Activity>(this);
@@ -61,11 +71,18 @@ public class liveStreamActivity extends MainActivity implements SensorEventListe
         txtStatus2= (TextView) findViewById(R.id.txtStat2);
         txtStatus3= (TextView) findViewById(R.id.txtStat3);
         txtStatus4= (TextView) findViewById(R.id.txtStat4);
+        txtStatus5= (TextView) findViewById(R.id.txtStat5);
+        txtStatus6= (TextView) findViewById(R.id.txtStat6);
+        txtStatus7= (TextView) findViewById(R.id.txtStat7);
+        txtStatus8= (TextView) findViewById(R.id.txtStat8);
         senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
         senSensorManager.registerListener(this, senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
         senGyroscope= senSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         senSensorManager.registerListener(this, senGyroscope, SensorManager.SENSOR_DELAY_NORMAL);
+        senSteps= senSensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
+        senSensorManager.registerListener(this, senSteps, SensorManager.SENSOR_DELAY_NORMAL);
+
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -94,8 +111,7 @@ public class liveStreamActivity extends MainActivity implements SensorEventListe
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
-
-        if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+        if (sensorEvent.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
             float x = sensorEvent.values[0];
             float y = sensorEvent.values[1];
             float z = sensorEvent.values[2];
@@ -107,8 +123,36 @@ public class liveStreamActivity extends MainActivity implements SensorEventListe
             float z= sensorEvent.values[2];
             runOnBrandon("X:"+ x + "Y:" + y + "Z:" + z);
         }
+        if(sensorEvent.sensor.getType() == Sensor.TYPE_STEP_DETECTOR){
+            stepping++;
+            rightNow= System.currentTimeMillis();
+            runOnMarc("Steps:" + stepping);
+            if(rightNow-previous<3000 && rightNow-previous>0){
+                double cadence= 60.0/(rightNow-previous)*1000;
+                sumCadence+=cadence;
+                averageCadence=sumCadence/average;
+                average++;
+                printCadence("Cadence:" + cadence);
+                printCadenceAvg("Avg Cadence:" + averageCadence);
+                if(abs(averageCadence-cadence)<15 && (heartRate-normHR)<10){
+                    printStatus("Walking Speed is Below Average");
+                }
+                else if(abs(averageCadence-cadence)>15 && (heartRate-normHR)>10){
+                    printStatus("Walking Speed is Above Average");
+                }
+                else if(abs(averageCadence-cadence)>15 && (heartRate-normHR)<10){
+                    printStatus("Walking Speed is Above Average, but Heart Rate is Below");
+                }
+                else if(abs(averageCadence-cadence)<15 && (heartRate-normHR)>10){
+                    printStatus("Walking Speed is Below Average and Heart Rate is Above Average");
+                }
+                else{
+                    printStatus("Walking Speed and Heart Rate is Average");
+                }
+            }
+            previous= rightNow;
+        }
     }
-
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
@@ -249,7 +293,9 @@ public class liveStreamActivity extends MainActivity implements SensorEventListe
                 String date= getDate(rightNow);
                 //message to cloud
                 new BandPedometerSubscriptionTask().execute();
-                appendToUI(String.format("Heart Rate= %d beats per minute\n" + "Quality=%s\n", event.getHeartRate(), event.getQuality()));
+                heartRate= event.getHeartRate();
+                quality=event.getQuality();
+                appendToUI(String.format("Heart Rate= %d beats per minute\n" + "Quality=%s\n", heartRate, quality));
             }
         }
     };
@@ -289,11 +335,43 @@ public class liveStreamActivity extends MainActivity implements SensorEventListe
             }
         });
     }
+    private void printCadenceAvg(final String string){
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                txtStatus8.setText(string);
+            }
+        });
+    }
+    private void runOnMarc(final String string){
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                txtStatus5.setText(string);
+            }
+        });
+    }
     private void GSRToUI(final String string){
         this.runOnUiThread(new Runnable(){
             @Override
             public void run(){
                 txtStatus2.setText(string);
+            }
+        });
+    }
+    private void printCadence(final String string){
+        this.runOnUiThread(new Runnable(){
+            @Override
+            public void run(){
+                txtStatus6.setText(string);
+            }
+        });
+    }
+    private void printStatus(final String string){
+        this.runOnUiThread(new Runnable(){
+            @Override
+            public void run(){
+                txtStatus7.setText(string);
             }
         });
     }
