@@ -31,6 +31,16 @@
         android:layout_height="wrap_content"
         android:height="17.5dp"/>
     <TextView
+        android:id="@+id/txtStat9"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:height="17.5dp"/>
+    <TextView
+        android:id="@+id/txtStat10"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:height="17.5dp"/>
+    <TextView
         android:id="@+id/txtStat5"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -47,6 +57,11 @@
         android:height="17.5dp"/>
     <TextView
         android:id="@+id/txtStat8"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:height="17.5dp"/>
+    <TextView
+        android:id="@+id/txtStat11"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:height="17.5dp"/>

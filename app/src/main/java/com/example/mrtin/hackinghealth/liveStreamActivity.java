@@ -46,7 +46,7 @@ public class liveStreamActivity extends MainActivity implements SensorEventListe
     double rightNow, previous= System.currentTimeMillis();
     private ImageButton startButton;
     long steps;
-    private TextView txtStatus, txtStatus2, txtStatus3, txtStatus4, txtStatus5, txtStatus6, txtStatus7, txtStatus8;
+    private TextView txtStatus, txtStatus2, txtStatus3, txtStatus4, txtStatus5, txtStatus6, txtStatus7, txtStatus8, txtStatus9, txtStatus10, txtStatus11;
     private SensorManager senSensorManager;
     private Sensor senAccelerometer;
     private Sensor senGyroscope, senSteps;
@@ -55,6 +55,9 @@ public class liveStreamActivity extends MainActivity implements SensorEventListe
     int average=1;
     int heartRate;
     int normHR=80;
+    int xAdjG, yAdjG, zAdjG;
+    int xAdjA, yAdjA, zAdjA;
+    int compensation=0;
     HeartRateQuality quality;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -75,6 +78,9 @@ public class liveStreamActivity extends MainActivity implements SensorEventListe
         txtStatus6= (TextView) findViewById(R.id.txtStat6);
         txtStatus7= (TextView) findViewById(R.id.txtStat7);
         txtStatus8= (TextView) findViewById(R.id.txtStat8);
+        txtStatus9= (TextView) findViewById(R.id.txtStat9);
+        txtStatus10=(TextView) findViewById(R.id.txtStat10);
+        txtStatus11=(TextView) findViewById(R.id.txtStat11);
         senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
         senSensorManager.registerListener(this, senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
@@ -112,16 +118,24 @@ public class liveStreamActivity extends MainActivity implements SensorEventListe
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
         if (sensorEvent.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
-            float x = sensorEvent.values[0];
-            float y = sensorEvent.values[1];
-            float z = sensorEvent.values[2];
+            float x= sensorEvent.values[0];
+            float y= sensorEvent.values[1];
+            float z= sensorEvent.values[2];
+            xAdjA = (int)(sensorEvent.values[0]*1.15);
+            yAdjA = (int)(sensorEvent.values[1]*1.15);
+            zAdjA = (int)(sensorEvent.values[2]*1.15);
             runOnNick("X:"+ x + "Y:" + y + "Z:" + z);
+            runAdj("X:" + xAdjA + "Y:" + yAdjA + "Z:" + zAdjA);
         }
         if(sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE){
             float x= sensorEvent.values[0];
             float y= sensorEvent.values[1];
             float z= sensorEvent.values[2];
+            xAdjG= (int)(sensorEvent.values[0]*1.15);
+            yAdjG= (int)(sensorEvent.values[1]*1.15);
+            zAdjG= (int)(sensorEvent.values[2]*1.15);
             runOnBrandon("X:"+ x + "Y:" + y + "Z:" + z);
+            runAdj2("X:" + xAdjG + "Y:" + yAdjG + "Z:" + zAdjG);
         }
         if(sensorEvent.sensor.getType() == Sensor.TYPE_STEP_DETECTOR){
             stepping++;
@@ -145,6 +159,10 @@ public class liveStreamActivity extends MainActivity implements SensorEventListe
                 }
                 else if(abs(averageCadence-cadence)<15 && (heartRate-normHR)>10){
                     printStatus("Walking Speed is Below Average and Heart Rate is Above Average");
+                }
+                if(xAdjA>5 || xAdjG >5 || yAdjA>5 || zAdjA>5 || yAdjG>5 || zAdjG>5){
+                    compensation++;
+                    printStatus2("Compensation" + compensation);
                 }
                 else{
                     printStatus("Walking Speed and Heart Rate is Average");
@@ -372,6 +390,30 @@ public class liveStreamActivity extends MainActivity implements SensorEventListe
             @Override
             public void run(){
                 txtStatus7.setText(string);
+            }
+        });
+    }
+    private void printStatus2(final String string){
+        this.runOnUiThread(new Runnable(){
+            @Override
+            public void run(){
+                txtStatus11.setText(string);
+            }
+        });
+    }
+    private void runAdj(final String string){
+        this.runOnUiThread(new Runnable(){
+            @Override
+            public void run(){
+                txtStatus9.setText(string);
+            }
+        });
+    }
+    private void runAdj2(final String string){
+        this.runOnUiThread(new Runnable(){
+            @Override
+            public void run(){
+                txtStatus10.setText(string);
             }
         });
     }
